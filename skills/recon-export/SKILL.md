@@ -12,6 +12,11 @@ output/recon/<normalized-domain>/<session-id>/
 ├── subdomains.txt
 ├── live-hosts.txt
 ├── urls.txt
+├── interesting-params.txt
+├── api-endpoints.txt
+├── uploads.txt
+├── admin-paths.txt
+├── auth-paths.txt
 ```
 
 Important files:

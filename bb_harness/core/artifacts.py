@@ -198,6 +198,30 @@ class ReconArtifacts:
             ]
         ))
 
+        # URL handoff files for the next security-testing skills. These mirror
+        # the operator grep pipelines and are derived only from in-scope URLs.
+        handoff_patterns = {
+            "interesting-params.txt": re.compile(
+                r"[?&](id|user|file|path|url|redirect|next|src|token|key|api_key)=", re.I
+            ),
+            "api-endpoints.txt": re.compile(
+                r"/api/|/v1/|/v2/|/v3/|/graphql|/rest/|/gql", re.I
+            ),
+            "uploads.txt": re.compile(
+                r"upload|file|attachment|document|image|avatar|photo|media", re.I
+            ),
+            "admin-paths.txt": re.compile(
+                r"/admin|/internal|/debug|/test|/staging|/dev|/management|/console", re.I
+            ),
+            "auth-paths.txt": re.compile(
+                r"/oauth|/login|/auth|/sso|/saml|/oidc|/callback|/token", re.I
+            ),
+        }
+        for filename, pattern in handoff_patterns.items():
+            paths[filename] = str(self.write_lines(
+                filename, [url for url in endpoint_urls if pattern.search(url)]
+            ))
+
         # Short aliases at the session root make the output immediately usable
         # with shell pipelines while normalized/ remains the canonical layout.
         root_exports = {
