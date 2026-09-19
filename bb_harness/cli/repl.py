@@ -14,6 +14,7 @@ from typing import Dict, List, Optional
 from rich.prompt import Prompt
 
 from bb_harness.core.config import scan_config, api_keys, OUTPUT_DIR, REPORTS_DIR
+from bb_harness.core.artifacts import ReconArtifacts
 from bb_harness.core.db import Database
 from bb_harness.core.runner import DualRunner, ContainerRunner, HostRunner
 from bb_harness.core.checklist import build_checklist, CATEGORY_INFO, TOTAL_CHECKS
@@ -84,6 +85,7 @@ class HarnessREPL:
         self.scan_console = ScanConsole()
         self.is_running = False
         self.attack_report: Optional[dict] = None
+        self.artifacts: Optional[ReconArtifacts] = None
 
     # ── Session Management ────────────────────────────────────────────────────
 
@@ -94,6 +96,8 @@ class HarnessREPL:
                 scan_config.target or "none", scan_config.mode
             )
             self.db.init_checks(self.session_id, self.checklist)
+            self.artifacts = ReconArtifacts(scan_config.target or "none", self.session_id, scan_config.mode)
+            self.artifacts.write_manifest("running")
         return self.session_id
 
     # ── Command Handlers ──────────────────────────────────────────────────────
@@ -116,6 +120,8 @@ class HarnessREPL:
         # Create new session for new target
         self.session_id = self.db.create_session(target, scan_config.mode)
         self.db.init_checks(self.session_id, self.checklist)
+        self.artifacts = ReconArtifacts(target, self.session_id, scan_config.mode)
+        self.artifacts.write_manifest("running")
         console.print(f"[green]✓ Target set:[/green] [bold]{target}[/bold]")
         console.print(f"[dim]  Session: {self.session_id}[/dim]")
 
@@ -270,6 +276,14 @@ class HarnessREPL:
             console.print(f"[green]✓ Live-host validation:[/green] {final['live_hosts']}/{final['subdomains_checked']} responsive")
             console.print(f"[green]✓ Takeover review:[/green] {final['takeover_candidates']} candidate(s)")
 
+        if self.artifacts:
+            artifact_status = "completed" if agent_filter == "all" else "partial"
+            paths = self.artifacts.export_snapshot(self.db, artifact_status)
+            console.print(f"[green]✓ Recon artifacts:[/green] {self.artifacts.root}")
+            console.print(f"[dim]  Report: {paths['recon.md']}[/dim]")
+            if artifact_status == "completed":
+                self.db.finish_session(self.session_id)
+
         self.is_running = False
         console.print("\n[bold green]✓ Scan complete[/bold green]\n")
         self._cmd_status()
@@ -417,6 +431,7 @@ class HarnessREPL:
         fmt = args.strip().lower() if args.strip() else "markdown"
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         target_safe = scan_config.target.replace(".", "_")
+        export_dir = self.artifacts.reports if self.artifacts else REPORTS_DIR
 
         if fmt == "json":
             report = {
@@ -433,7 +448,7 @@ class HarnessREPL:
                 "findings": self.db.get_findings(self.session_id),
                 "checks": self.db.get_checks(self.session_id),
             }
-            path = REPORTS_DIR / f"report_{target_safe}_{timestamp}.json"
+            path = export_dir / f"report_{target_safe}_{timestamp}.json"
             path.write_text(json.dumps(report, indent=2))
 
         elif fmt in ("markdown", "md"):
@@ -476,7 +491,7 @@ class HarnessREPL:
                         lines.append(f"{f['description']}  ")
                     lines.append("")
 
-            path = REPORTS_DIR / f"report_{target_safe}_{timestamp}.md"
+            path = export_dir / f"report_{target_safe}_{timestamp}.md"
             path.write_text("\n".join(lines))
 
         elif fmt == "html":
@@ -503,7 +518,7 @@ th{{background:#161b22}}h1,h2{{color:#58a6ff}}.critical{{color:#f85149}}.high{{c
                 html += "</table>"
 
             html += "</body></html>"
-            path = REPORTS_DIR / f"report_{target_safe}_{timestamp}.html"
+            path = export_dir / f"report_{target_safe}_{timestamp}.html"
             path.write_text(html)
         else:
             console.print("[red]Unsupported format. Use: markdown, json, or html[/red]")

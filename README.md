@@ -81,6 +81,41 @@ bb-harness/
 
 ---
 
+## Recon Skills and Domain-Scoped Artifacts
+
+Recon is organized as composable skills under `skills/`, following a staged workflow:
+
+1. `recon-passive-enumeration`
+2. `recon-live-host-validation`
+3. `recon-port-service`
+4. `recon-web-surface`
+5. `recon-technology-js`
+6. `recon-export`
+
+Run the full workflow with the Windows wrapper or the Python CLI:
+
+```powershell
+./recon.ps1 -Target example.com -Mode container
+# or
+python -m bb_harness --target example.com --mode container --run all --export json
+```
+
+Every run is isolated under `output/recon/<domain>/<session_id>/`:
+
+```text
+manifest.json
+raw/<stage>/
+normalized/{subdomains,live-hosts,open-ports,technologies,endpoints,parameters,findings,checks}.json
+normalized/asset-graph.json
+reports/recon.json
+reports/recon.md
+logs/
+```
+
+The 230-item checklist remains authoritative in `security-checklist.txt`, with the raw source retained at `raw.checklist.txt.txt`. Runtime databases, reports, credentials, cookies, tokens, and `.env` files are ignored and must not be committed.
+
+---
+
 ## Quick Start
 
 ### 1. Host Mode (Local)
