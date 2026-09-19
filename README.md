@@ -83,14 +83,8 @@ bb-harness/
 
 ## Recon Skills and Domain-Scoped Artifacts
 
-Recon is organized as composable skills under `skills/`, following a staged workflow:
-
-1. `recon-passive-enumeration`
-2. `recon-live-host-validation`
-3. `recon-port-service`
-4. `recon-web-surface`
-5. `recon-technology-js`
-6. `recon-export`
+Recon uses one entry-point skill, `skills/bb-harness-recon/SKILL.md`, which runs
+the complete staged workflow through the existing Python agents.
 
 Run the full workflow with the Windows wrapper or the Python CLI:
 

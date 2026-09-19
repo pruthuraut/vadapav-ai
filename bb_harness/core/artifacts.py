@@ -231,6 +231,10 @@ class ReconArtifacts:
         }
         for filename, values in root_exports.items():
             paths[f"root/{filename}"] = str(self.write_lines(filename, values))
+        if not (self.root / "live-urls.txt").exists():
+            paths["live-urls.txt"] = str(self.write_lines("live-urls.txt", []))
+        if not (self.normalized / "live-urls.txt").exists():
+            self.write_lines("normalized/live-urls.txt", [])
 
         graph = {
             "target": self.target,

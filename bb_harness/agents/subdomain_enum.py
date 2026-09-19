@@ -9,6 +9,7 @@ import json
 import asyncio
 from typing import List, Optional
 from urllib.parse import quote
+from pathlib import Path
 
 from bb_harness.agents.base import BaseAgent
 from bb_harness.core.models import (
@@ -489,6 +490,51 @@ class SubdomainEnumAgent(BaseAgent):
 
     async def _probe_live_hosts(self, records: list[dict]) -> int:
         """Probe discovered subdomains over HTTPS/HTTP and persist liveness."""
+        # Prefer ProjectDiscovery httpx in the selected execution mode. The
+        # existing bounded Python probe below remains the safe fallback when
+        # the CLI/container is unavailable.
+        targets = [
+            scheme + record["subdomain"]
+            for record in records
+            for scheme in ("https://", "http://")
+        ]
+        self.artifacts.write_lines("raw/live-hosts/httpx-targets.txt", targets)
+        input_path = Path("recon") / self.artifacts.domain / self.session_id / "raw" / "live-hosts" / "httpx-targets.txt"
+        previous_check = self._active_check_id
+        self._active_check_id = "live-hosts-httpx"
+        result = await self.run_tool(
+            "httpx",
+            f"httpx -l {input_path.as_posix()} -silent -status-code -title -tech-detect -follow-redirects",
+            timeout=max(60, min(self.config.timeout * 10, 600)),
+        )
+        self._active_check_id = previous_check
+        if result.success:
+            by_host = {record["subdomain"].lower(): record["subdomain"] for record in records}
+            live = 0
+            seen_hosts = set()
+            for line in result.lines:
+                match = re.match(r"(https?://[^\s\[]+)", line)
+                if not match:
+                    continue
+                from urllib.parse import urlparse
+                parsed = urlparse(match.group(1))
+                host = (parsed.hostname or "").lower()
+                if host not in by_host or host in seen_hosts:
+                    continue
+                seen_hosts.add(host)
+                status_match = re.search(r"\[(\d{3})\]", line)
+                title_match = re.search(r"\]\s+\[([^\]]*)\]", line)
+                self.db.update_subdomain_probe(
+                    self.session_id,
+                    by_host[host],
+                    await self.resolve_dns(host, "A"),
+                    True,
+                    int(status_match.group(1)) if status_match else 0,
+                    title_match.group(1).strip()[:200] if title_match else "",
+                )
+                live += 1
+            return live
+
         import asyncio
         import re
         semaphore = asyncio.Semaphore(10)

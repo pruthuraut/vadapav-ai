@@ -140,6 +140,31 @@ class HarnessREPL:
             self._cmd_target(target)
             await self._cmd_run("all")
 
+    async def _filter_live_urls(self):
+        """Use ProjectDiscovery httpx to produce a live URL handoff file."""
+        if not self.artifacts or not self.session_id:
+            return
+        urls = [str(row.get("url", "")) for row in self.db.get_endpoints(self.session_id) if row.get("url")]
+        self.artifacts.write_lines("raw/web-surface/httpx-url-input.txt", urls)
+        input_path = Path("recon") / self.artifacts.domain / self.session_id / "raw" / "web-surface" / "httpx-url-input.txt"
+        result = await self.runner.run_tool(
+            "httpx",
+            f"httpx -l {input_path.as_posix()} -silent -status-code -title -tech-detect -follow-redirects",
+            timeout=600,
+        )
+        self.artifacts.record_tool_output(
+            "web-surface", "live-url-filter", "httpx", result.stdout,
+            result.stderr, result.mode, result.returncode,
+        )
+        live_urls = []
+        if result.success:
+            for line in result.lines:
+                match = re.match(r"https?://[^\s\[]+", line)
+                if match:
+                    live_urls.append(match.group(0))
+        self.artifacts.write_lines("live-urls.txt", live_urls)
+        self.artifacts.write_lines("normalized/live-urls.txt", live_urls)
+
     def _cmd_mode(self, args: str):
         """Switch execution mode."""
         mode = args.strip().lower()
@@ -275,6 +300,9 @@ class HarnessREPL:
             final = await finalizer.finalize_recon()
             console.print(f"[green]✓ Live-host validation:[/green] {final['live_hosts']}/{final['subdomains_checked']} responsive")
             console.print(f"[green]✓ Takeover review:[/green] {final['takeover_candidates']} candidate(s)")
+
+        if "content_discovery" in agents_to_run or "link_param_discovery" in agents_to_run:
+            await self._filter_live_urls()
 
         if self.artifacts:
             artifact_status = "completed" if agent_filter == "all" else "partial"

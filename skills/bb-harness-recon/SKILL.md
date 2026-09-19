@@ -1,66 +1,72 @@
 ---
 name: bb-harness-recon
-description: Run the staged bb-harness recon workflow for an authorized domain, wildcard root, or domain list; preserve all checklist coverage, validate live hosts, map the web surface, and write isolated per-domain artifacts. Use when the user asks to launch recon, enumerate subdomains, check live hosts, or assess an attack surface.
+description: Run the complete authorized bb-harness recon workflow for one domain, wildcard root, or domain list. The single recon orchestrator runs the existing agents, uses ProjectDiscovery httpx for live filtering when available, falls back safely, and saves all outputs as text and JSON under a domain/session directory.
 ---
 
 # bb-harness recon
 
-Use this skill only for authorized targets.
+This is the only recon skill. It is the entry point for the complete recon
+workflow; the Python agents are implementation details, not separate skills.
+Use it only for authorized targets.
 
-## Launch
+## Run the main recon script
 
-From the repository root, use the Docker wrapper for reproducible execution:
+From the repository root:
 
-```text
-/recon example.com
-/recon *.example.com
-/recon domains.txt
+```powershell
+./recon.ps1 -Target example.com -Mode container
+./recon.cmd example.com container
+```
 
-# Equivalent direct command
+Equivalent command:
+
+```powershell
 python -m bb_harness --target example.com --mode container --run all --export json
 ```
 
-If the host IDE does not support custom slash commands, use natural language or the Docker command documented in AGENTS.md/CLAUDE.md.
+The target may be a domain, `*.domain`, comma-separated domains, or a newline-
+delimited domain file. Each target gets its own session and output directory.
 
-## Workflow
+## Execution policy
 
-1. Normalize the target to its authorized base domain.
-2. Run the five existing recon agents in the planned order: subdomains, ports, technology, content, then links/parameters.
-3. Resolve discovered subdomains and probe HTTPS first, then HTTP, using bounded concurrency and timeouts.
-4. Persist `is_alive`, status code, title, and resolved IPs. Treat DNS-only records as discovered but not live HTTP hosts.
-5. Check CNAMEs for known hosted-service fingerprints and dangling/NXDOMAIN targets. Record takeover candidates as potential until ownership or provider-specific claims are independently verified.
-6. Exclude dead or out-of-scope hosts from downstream web testing while retaining them in the recon inventory.
-7. Export a report showing total discovered, live, dead, unresolved, takeover candidates, and evidence.
-8. Write a portable artifact tree under `output/recon/<domain>/<session_id>/`.
+1. Start the existing five-agent recon pipeline and preserve all 230 checklist items.
+2. Prefer container execution for external tools.
+3. If Docker or a requested binary is unavailable, `DualRunner` falls back to an installed host tool or the existing safe Python implementation.
+4. Keep scope, rate limits, timeouts, concurrency, and read-only behavior active.
+5. Run ProjectDiscovery `httpx` against discovered hosts for HTTPS/HTTP liveness, status, title, and technology filtering when available. If the CLI is unavailable, use the existing bounded Python HTTP probe.
+6. Run `httpx` against the discovered URL list when available and save the live URL subset. The complete discovered URL list is always retained.
 
-## Artifact contract
-
-Each run is isolated by normalized domain and session:
+## Output contract
 
 ```text
-output/recon/example.com/<session-id>/
+output/recon/<domain>/<session_id>/
+├── subdomains.txt                 # all discovered names
+├── live-hosts.txt                 # httpx/Python-validated hosts
+├── urls.txt                       # all discovered URLs
+├── live-urls.txt                  # httpx-validated URL subset
+├── interesting-params.txt
+├── api-endpoints.txt
+├── uploads.txt
+├── admin-paths.txt
+├── auth-paths.txt
 ├── manifest.json
-├── raw/
-│   ├── passive/ dns/ live-hosts/ ports/
-│   ├── technology/ web-surface/ js-analysis/ triage/
-├── normalized/
-│   ├── subdomains.json
-│   ├── live-hosts.json
-│   ├── open-ports.json
-│   ├── technologies.json
-│   ├── endpoints.json
-│   ├── parameters.json
-│   ├── findings.json
-│   ├── checks.json
-│   └── asset-graph.json
-├── reports/
-│   ├── recon.json
-│   └── recon.md
-└── logs/
+├── raw/<stage>/*.txt              # actual tool stdout/stderr
+├── normalized/*.json and *.txt
+└── reports/recon.{json,md}
 ```
 
-The SQLite database is authoritative; JSON files are sanitized, portable snapshots for later skills.
+The text files are intended for handoff to later tools. Sensitive query values
+are redacted in text exports.
 
-## Safety
+`urls.txt` is never replaced by the live filter. `live-urls.txt` is a separate
+subset produced by ProjectDiscovery `httpx` when available; if the CLI is not
+available, it is created empty and the existing Python recon results remain
+available in the other inventories.
 
-Do not claim takeover from a CNAME fingerprint alone. Do not register services, claim cloud resources, upload proof files, or modify DNS. Keep all probes read-only and in scope.
+## Checklist and safety
+
+The authoritative checklist is `security-checklist.txt`; the supplied raw
+checklist is retained at `raw.checklist.txt.txt`. Do not claim a vulnerability
+or takeover from a banner, status, CNAME, or tool output alone. Do not use
+credentials, brute force, exploit payloads, upload files, access internal
+services, or test third-party URLs merely because they appeared in content.
