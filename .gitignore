@@ -1,0 +1,41 @@
+# Environment & Secrets
+.env
+*.env
+
+# SQLite Database & Scans
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Scan Output & Reports
+output/
+reports/
+
+# Local agent/IDE configuration
+.codex/
+.claude/
+.cursor/
+AGENTS.md
+CLAUDE.md
+
+# Large local reference artifacts (not required to run the project)
+*.pptx
+The Bug Hunter's Methodology *.txt
+
+# Local repository metadata
+.coverage
+coverage.xml
+htmlcov/
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+venv/
+env/
+.venv/
+
+# OS artifacts
+.DS_Store
+Thumbs.db

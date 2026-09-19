@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "policy": {
+    "default_mode": "safe_read_only",
+    "approval_required_for": ["credential_attack", "rce", "ssrf_internal", "exfiltration", "dos", "social_engineering", "state_change"],
+    "note": "Inventory is descriptive. Missing or gated tools are never auto-installed or invoked by the autonomous runner."
+  },
+  "families": {
+    "subdomain_enumeration": {"tools": ["subfinder", "amass", "assetfinder", "dnsrecon", "massdns", "sublist3r"], "safe": true},
+    "port_service_enum": {"tools": ["nmap", "masscan", "naabu", "curl", "wget"], "safe": true},
+    "fingerprinting": {"tools": ["wafw00f"], "safe": true},
+    "content_url_discovery": {"tools": ["dirsearch", "gau", "katana", "hakrawler"], "safe": true},
+    "tls_headers_dns": {"tools": ["openssl", "curl", "dig", "whois"], "safe": true},
+    "passive_secret_analysis": {"tools": ["jq", "git", "grep", "regex"], "safe": true},
+    "graphql_websocket": {"tools": ["curl"], "safe": false, "manual": true},
+    "sql_injection": {"tools": ["sqlmap"], "safe": false, "gated": true},
+    "credential_attacks": {"tools": ["hydra", "medusa", "john", "hashcat"], "safe": false, "gated": true},
+    "xss_command_template": {"tools": ["dalfox", "xsstrike", "commix"], "safe": false, "gated": true},
+    "ssrf_oob": {"tools": ["interactsh", "ssrfmap", "gopherus"], "safe": false, "gated": true},
+    "cloud_container": {"tools": ["trivy", "kube-bench", "prowler", "scoutsuite"], "safe": false, "gated": true},
+    "takeover": {"tools": ["nuclei", "subjack", "subover", "dnsreaper"], "safe": true, "requires_live_probe": true},
+    "burp_authenticated_traffic": {"tools": ["burp_har_import"], "safe": true, "external": true}
+  },
+  "observed_in_image": {
+    "present": ["subfinder", "amass", "assetfinder", "dnsrecon", "massdns", "sublist3r", "nmap", "masscan", "naabu", "curl", "wget", "wafw00f", "dirsearch", "gau", "katana", "hakrawler", "nuclei", "openssl", "dig", "whois", "jq", "git"],
+    "missing_or_unverified": ["findomain", "knockpy", "rustscan", "unicornscan", "rpcinfo", "nc", "redis-cli", "mongosh", "psql", "mysql", "snmpwalk", "smbclient", "ldapsearch", "showmount", "whatweb", "webanalyze", "wpscan", "joomscan", "droopescan", "fingerprintx", "ffuf", "gobuster", "feroxbuster", "arjun", "sqlmap", "hydra", "medusa", "john", "hashcat", "jwt_tool", "testssl.sh", "sslscan", "sslyze", "nikto", "dalfox", "xsstrike", "commix", "nosqlmap", "websocat", "wscat", "trivy", "kube-bench", "interactsh", "ssrfmap", "gopherus", "subjack", "subover", "dnsreaper", "prowler", "scoutsuite"]
+  }
+}
