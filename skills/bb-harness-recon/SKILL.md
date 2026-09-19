@@ -44,6 +44,7 @@ output/recon/<domain>/<session_id>/
 ├── live-hosts.txt                 # httpx/Python-validated hosts
 ├── urls.txt                       # all discovered URLs
 ├── live-urls.txt                  # httpx-validated URL subset
+├── javascript.txt                 # discovered JavaScript URLs
 ├── interesting-params.txt
 ├── api-endpoints.txt
 ├── uploads.txt

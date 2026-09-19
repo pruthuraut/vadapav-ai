@@ -163,6 +163,10 @@ class ReconArtifacts:
         subdomains = inventories["subdomains.json"]
         endpoints = inventories["endpoints.json"]
         endpoint_urls = [self._redact_url(str(row.get("url", ""))) for row in endpoints]
+        javascript_urls = [
+            url for url in endpoint_urls
+            if re.search(r"(?:\.js)(?:[?#]|$)", url, re.I)
+        ]
         paths["subdomains.txt"] = str(self.write_lines(
             "normalized/subdomains.txt", [row.get("subdomain", "") for row in subdomains]
         ))
@@ -185,6 +189,7 @@ class ReconArtifacts:
         ))
         paths["urls.txt"] = str(self.write_lines("normalized/urls.txt", endpoint_urls))
         paths["endpoints.txt"] = str(self.write_lines("normalized/endpoints.txt", endpoint_urls))
+        paths["javascript.txt"] = str(self.write_lines("normalized/javascript.txt", javascript_urls))
         paths["parameters.txt"] = str(self.write_lines(
             "normalized/parameters.txt", [
                 f"{row.get('name')}\t{self._redact_url(str(row.get('url', '')))}"
@@ -228,6 +233,7 @@ class ReconArtifacts:
             "subdomains.txt": [row.get("subdomain", "") for row in subdomains],
             "live-hosts.txt": [f"https://{row.get('subdomain')}" for row in subdomains if row.get("is_alive")],
             "urls.txt": endpoint_urls,
+            "javascript.txt": javascript_urls,
         }
         for filename, values in root_exports.items():
             paths[f"root/{filename}"] = str(self.write_lines(filename, values))

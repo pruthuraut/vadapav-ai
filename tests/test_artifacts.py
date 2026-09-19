@@ -16,6 +16,7 @@ def test_export_snapshot_writes_domain_scoped_contract(tmp_path, monkeypatch):
     session_id = db.create_session("example.com", "host")
     db.add_endpoint(session_id, Endpoint("https://example.com/api/users?id=7"))
     db.add_endpoint(session_id, Endpoint("https://example.com/login"))
+    db.add_endpoint(session_id, Endpoint("https://example.com/assets/app.js?v=1"))
     recon = ReconArtifacts("example.com", session_id, "host")
 
     paths = recon.export_snapshot(db)
@@ -23,6 +24,7 @@ def test_export_snapshot_writes_domain_scoped_contract(tmp_path, monkeypatch):
     assert (recon.root / "manifest.json").exists()
     assert (recon.root / "subdomains.txt").exists()
     assert (recon.root / "urls.txt").exists()
+    assert "assets/app.js" in (recon.root / "javascript.txt").read_text()
     assert "api/users" in (recon.root / "api-endpoints.txt").read_text()
     assert "login" in (recon.root / "auth-paths.txt").read_text()
     assert "users?id=7" in (recon.root / "interesting-params.txt").read_text()

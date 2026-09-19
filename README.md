@@ -99,6 +99,7 @@ Every run is isolated under `output/recon/<domain>/<session_id>/`:
 ```text
 manifest.json
 subdomains.txt, live-hosts.txt, urls.txt
+javascript.txt
 interesting-params.txt, api-endpoints.txt, uploads.txt, admin-paths.txt, auth-paths.txt
 raw/<stage>/
 normalized/{subdomains,live-hosts,open-ports,technologies,endpoints,parameters,findings,checks}.json
