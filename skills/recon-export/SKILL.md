@@ -9,6 +9,9 @@ The application exports automatically after `/run all` or the equivalent CLI com
 
 ```text
 output/recon/<normalized-domain>/<session-id>/
+├── subdomains.txt
+├── live-hosts.txt
+├── urls.txt
 ```
 
 Important files:
@@ -18,5 +21,9 @@ Important files:
 - `normalized/asset-graph.json`: relationships across domains, hosts, ports, technologies, endpoints, and parameters.
 - `reports/recon.json`: complete machine-readable snapshot.
 - `reports/recon.md`: operator-friendly summary.
+
+The root `.txt` files are shell-pipeline aliases. Canonical line-oriented
+copies are also written under `normalized/`, while every external tool result
+is captured as a text file under its stage in `raw/`.
 
 The SQLite database remains local runtime state and is ignored by Git. Never commit `output/`, `data/`, `.env`, cookies, tokens, HAR files, or raw authenticated traffic.

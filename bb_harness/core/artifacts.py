@@ -11,6 +11,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from bb_harness.core.config import OUTPUT_DIR
 
@@ -87,6 +88,57 @@ class ReconArtifacts:
         path.write_text(json.dumps(value, indent=2, default=str) + "\n", encoding="utf-8")
         return path
 
+    @staticmethod
+    def _redact_url(url: str) -> str:
+        """Remove credential-like query values before writing line exports."""
+        try:
+            parts = urlsplit(url)
+            sensitive = re.compile(r"(token|key|secret|password|passwd|auth|api[_-]?key|signature)", re.I)
+            query = [
+                (name, "[REDACTED]" if sensitive.search(name) else value)
+                for name, value in parse_qsl(parts.query, keep_blank_values=True)
+            ]
+            return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+        except Exception:
+            return url
+
+    def write_lines(self, relative: str, values: list[str]) -> Path:
+        path = self.root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        clean = sorted({str(value).strip() for value in values if str(value).strip()})
+        path.write_text("\n".join(clean) + ("\n" if clean else ""), encoding="utf-8")
+        return path
+
+    def record_tool_output(
+        self,
+        stage: str,
+        check_id: str,
+        tool: str,
+        stdout: str = "",
+        stderr: str = "",
+        mode: str = "host",
+        returncode: int = 0,
+        sequence: int = 1,
+    ) -> Path:
+        """Persist one external tool result without persisting its command."""
+        safe_stage = re.sub(r"[^a-z0-9_-]+", "_", stage.lower())
+        safe_name = re.sub(r"[^a-z0-9_-]+", "_", f"{check_id}_{tool}_{sequence}".lower())
+        body = (
+            f"# tool: {tool}\n"
+            f"# mode: {mode}\n"
+            f"# returncode: {returncode}\n"
+            "\n"
+            "## stdout\n"
+            f"{stdout or ''}\n"
+            "\n"
+            "## stderr\n"
+            f"{stderr or ''}\n"
+        )
+        path = self.raw / safe_stage / f"{safe_name}.txt"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8", errors="replace")
+        return path
+
     def export_snapshot(self, db, status: str = "completed") -> dict[str, str]:
         """Export normalized inventories and a human-readable recon report."""
         summary = db.get_summary(self.session_id)
@@ -105,6 +157,56 @@ class ReconArtifacts:
         paths: dict[str, str] = {}
         for name, value in inventories.items():
             paths[name] = str(self.write_json(f"normalized/{name}", value))
+
+        # Line-oriented exports are intentionally easy to pipe into grep, ffuf,
+        # nuclei, custom scripts, or the next skill in the workflow.
+        subdomains = inventories["subdomains.json"]
+        endpoints = inventories["endpoints.json"]
+        endpoint_urls = [self._redact_url(str(row.get("url", ""))) for row in endpoints]
+        paths["subdomains.txt"] = str(self.write_lines(
+            "normalized/subdomains.txt", [row.get("subdomain", "") for row in subdomains]
+        ))
+        paths["live-hosts.txt"] = str(self.write_lines(
+            "normalized/live-hosts.txt", [
+                f"https://{row.get('subdomain')}" for row in subdomains if row.get("is_alive")
+            ]
+        ))
+        paths["open-ports.txt"] = str(self.write_lines(
+            "normalized/open-ports.txt", [
+                f"{row.get('host')}:{row.get('port')}/{row.get('protocol', 'tcp')}"
+                for row in inventories["open-ports.json"]
+            ]
+        ))
+        paths["technologies.txt"] = str(self.write_lines(
+            "normalized/technologies.txt", [
+                f"{row.get('name')}\t{row.get('version', '')}\t{row.get('url', '')}"
+                for row in inventories["technologies.json"]
+            ]
+        ))
+        paths["urls.txt"] = str(self.write_lines("normalized/urls.txt", endpoint_urls))
+        paths["endpoints.txt"] = str(self.write_lines("normalized/endpoints.txt", endpoint_urls))
+        paths["parameters.txt"] = str(self.write_lines(
+            "normalized/parameters.txt", [
+                f"{row.get('name')}\t{self._redact_url(str(row.get('url', '')))}"
+                for row in inventories["parameters.json"]
+            ]
+        ))
+        paths["findings.txt"] = str(self.write_lines(
+            "normalized/findings.txt", [
+                f"[{row.get('severity', 'info').upper()}] {row.get('title')}\t{self._redact_url(str(row.get('url', '')))}"
+                for row in inventories["findings.json"]
+            ]
+        ))
+
+        # Short aliases at the session root make the output immediately usable
+        # with shell pipelines while normalized/ remains the canonical layout.
+        root_exports = {
+            "subdomains.txt": [row.get("subdomain", "") for row in subdomains],
+            "live-hosts.txt": [f"https://{row.get('subdomain')}" for row in subdomains if row.get("is_alive")],
+            "urls.txt": endpoint_urls,
+        }
+        for filename, values in root_exports.items():
+            paths[f"root/{filename}"] = str(self.write_lines(filename, values))
 
         graph = {
             "target": self.target,
@@ -128,6 +230,7 @@ class ReconArtifacts:
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "summary": summary,
             "inventories": inventories,
+            "text_exports": sorted(paths),
             "artifact_root": self.relative_root,
         }
         paths["recon.json"] = str(self.write_json("reports/recon.json", report))

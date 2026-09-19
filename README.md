@@ -104,9 +104,12 @@ Every run is isolated under `output/recon/<domain>/<session_id>/`:
 
 ```text
 manifest.json
+subdomains.txt, live-hosts.txt, urls.txt
 raw/<stage>/
 normalized/{subdomains,live-hosts,open-ports,technologies,endpoints,parameters,findings,checks}.json
 normalized/asset-graph.json
+normalized/{subdomains,live-hosts,open-ports,technologies,urls,endpoints,parameters,findings}.txt
+raw/<stage>/<check>_<tool>_<sequence>.txt
 reports/recon.json
 reports/recon.md
 logs/

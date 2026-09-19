@@ -37,6 +37,43 @@ For the repository wrapper:
 
 The implementation maps these stages onto the existing agents and every checklist item remains represented in `security-checklist.txt` and `bb_harness/core/checklist.py`.
 
+## Tool-flow reference
+
+The implementation runs the equivalent bounded stages through the recon agents.
+These commands describe the planned handoff files for operators using the
+container toolchain directly:
+
+```bash
+TARGET="example.com"
+RECON_DIR="output/recon/$TARGET/manual"
+mkdir -p "$RECON_DIR" "$RECON_DIR/raw" "$RECON_DIR/candidates"
+
+# Passive sources
+curl -s "https://crt.sh/?q=%25.${TARGET}&output=json" \
+  | jq -r '.[].name_value' | sed 's/\\*\\.//g' | sort -u \
+  > "$RECON_DIR/subdomains.txt"
+subfinder -d "$TARGET" -silent | anew "$RECON_DIR/subdomains.txt"
+assetfinder --subs-only "$TARGET" | anew "$RECON_DIR/subdomains.txt"
+
+# Resolve and validate live hosts
+cat "$RECON_DIR/subdomains.txt" | dnsx -silent \
+  | httpx -silent -status-code -title -tech-detect \
+  | tee "$RECON_DIR/live-hosts.txt"
+
+# Crawl and collect historical URLs
+awk '{print $1}' "$RECON_DIR/live-hosts.txt" | katana -d 3 -jc -kf all -silent \
+  | anew "$RECON_DIR/urls.txt"
+echo "$TARGET" | waybackurls | anew "$RECON_DIR/urls.txt"
+gau "$TARGET" --subs | anew "$RECON_DIR/urls.txt"
+
+# Bounded template scan; findings are preliminary until reviewed
+nuclei -l "$RECON_DIR/live-hosts.txt" \
+  -severity critical,high,medium -o "$RECON_DIR/nuclei.txt"
+```
+
+For normal operation, prefer `python -m bb_harness ... --run all`; it writes
+the same handoff files under a real session ID and preserves checklist status.
+
 ## Completion criteria
 
 - The target is normalized and remains in scope.

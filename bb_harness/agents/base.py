@@ -11,6 +11,7 @@ from bb_harness.core.models import CheckItem, CheckStatus, AgentCategory
 from bb_harness.core.db import Database
 from bb_harness.core.runner import DualRunner, HostRunner
 from bb_harness.core.config import scan_config, api_keys
+from bb_harness.core.artifacts import ReconArtifacts
 
 
 class BaseAgent:
@@ -31,6 +32,9 @@ class BaseAgent:
         self.session_id = session_id
         self.config = scan_config
         self.keys = api_keys
+        self.artifacts = ReconArtifacts(self.target, session_id, self.config.mode)
+        self._active_check_id = "unattributed"
+        self._tool_sequences: Dict[str, int] = {}
         self.enabled = True
         self._check_methods: Dict[str, Callable] = {}
         self._register_methods()
@@ -69,6 +73,7 @@ class BaseAgent:
             console.log_check_start(check)
 
         try:
+            self._active_check_id = check.check_id
             result_count = await method()
             check.status = CheckStatus.DONE
             check.result_count = result_count or 0
@@ -89,6 +94,8 @@ class BaseAgent:
             )
             if console:
                 console.log_check_fail(check)
+        finally:
+            self._active_check_id = "unattributed"
 
         return check
 
@@ -111,7 +118,28 @@ class BaseAgent:
 
     async def run_tool(self, tool: str, cmd: str, timeout: int = 300):
         """Run an external tool through the dual runner."""
-        return await self.runner.run_tool(tool, cmd, timeout=timeout)
+        result = await self.runner.run_tool(tool, cmd, timeout=timeout)
+        stage_by_category = {
+            AgentCategory.SUBDOMAIN_ENUM: "passive",
+            AgentCategory.PORT_SCAN: "ports",
+            AgentCategory.TECH_FINGERPRINT: "technology",
+            AgentCategory.CONTENT_DISCOVERY: "web-surface",
+            AgentCategory.LINK_PARAM_DISCOVERY: "js-analysis",
+        }
+        stage = stage_by_category.get(self.CATEGORY, "raw")
+        key = f"{self._active_check_id}:{tool}"
+        self._tool_sequences[key] = self._tool_sequences.get(key, 0) + 1
+        self.artifacts.record_tool_output(
+            stage=stage,
+            check_id=self._active_check_id,
+            tool=tool,
+            stdout=result.stdout,
+            stderr=result.stderr,
+            mode=result.mode,
+            returncode=result.returncode,
+            sequence=self._tool_sequences[key],
+        )
+        return result
 
     async def http_get(self, url: str, timeout: int = 30) -> Optional[dict]:
         """Make an HTTP GET request and return {status, headers, text}."""
