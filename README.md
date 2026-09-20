@@ -86,6 +86,9 @@ bb-harness/
 Recon uses one entry-point skill, `skills/bb-harness-recon/SKILL.md`, which runs
 the complete staged workflow through the existing Python agents.
 
+After a completed recon session, the separate `skills/bb-harness-js-recon/SKILL.md`
+consumes the saved URL handoffs and performs bounded JavaScript analysis.
+
 Run the full workflow with the Windows wrapper or the Python CLI:
 
 ```powershell
