@@ -21,6 +21,23 @@ The setup script installs the Python dependencies, recon binaries, SecLists,
 nuclei templates, and additional wordlists under `$HOME/wordlists`. It does not
 create or request credentials.
 
+## Windows setup
+
+Native Windows setup is also supported through PowerShell and `winget`:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\setup_windows.ps1
+.\.venv\Scripts\Activate.ps1
+python recon.py example.com
+```
+
+The Windows script installs Python, Go, Git, and Nmap; builds the Go recon
+tools; creates `.venv`; and downloads SecLists, nuclei templates, Commonspeak2,
+and LinkFinder. Some Linux-only binaries such as massdns/masscan may be
+unavailable natively; the Python fallbacks remain available, or use the Linux
+setup on WSL for the complete native toolchain.
+
 ## Configure API keys
 
 Use environment variables or a local ignored `.env` file copied from
