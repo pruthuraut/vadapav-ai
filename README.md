@@ -100,6 +100,9 @@ output/recon/<domain>/<session_id>/
 `raw/<stage>/*.txt` contains actual stdout/stderr from installed tools. The
 plain-text files are designed for piping into later tools. `urls.txt` retains
 all discovered URLs; `live-urls.txt` is the optional `httpx`-validated subset.
+`javascript.txt` contains discovered JavaScript URLs, and `dorks.txt` contains
+offline-generated, target-scoped Google dork links from the supplied dork
+runner. Dorks are generated only; Google is not scraped automatically.
 
 ## Skills
 

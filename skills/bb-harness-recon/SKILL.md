@@ -34,6 +34,9 @@ delimited domain file. Each target gets its own session and output directory.
 4. Keep scope, rate limits, timeouts, concurrency, and read-only behavior active.
 5. Run ProjectDiscovery `httpx` against discovered hosts for HTTPS/HTTP liveness, status, title, and technology filtering when available. If the CLI is unavailable, use the existing bounded Python HTTP probe.
 6. Run `httpx` against the discovered URL list when available and save the live URL subset. The complete discovered URL list is always retained.
+7. Generate `dorks.txt` offline from the supplied dork-runner categories. Save
+   the generated queries and Google links for later review; do not scrape
+   Google or request third-party results automatically.
 
 ## Output contract
 
