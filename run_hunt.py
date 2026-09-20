@@ -66,7 +66,7 @@ async def main() -> None:
     db = Database()
     session_id, target, partial_recon = resolve_session(db, args.domain, args.recon)
     traffic = load_har(args.har) if args.har else []
-    report = await AttackPhaseAgent(db, DualRunner(mode="container"), session_id, args.checklist, traffic).start()
+    report = await AttackPhaseAgent(db, DualRunner(mode="host"), session_id, args.checklist, traffic).start()
     report["generated_at"] = datetime.utcnow().isoformat()
     report["recon_completion"] = "partial_report_backed" if partial_recon else "completed"
     output = Path(args.output or f"output/reports/hunt_{target.replace('.', '_')}_{session_id}.json")

@@ -19,7 +19,7 @@ async def main():
     parser.add_argument("--output", default="output/reports/attack_phase_report.json")
     args = parser.parse_args()
     traffic = load_har(args.har) if args.har else []
-    agent = AttackPhaseAgent(Database(), DualRunner(mode="container"), args.session, args.checklist, traffic)
+    agent = AttackPhaseAgent(Database(), DualRunner(mode="host"), args.session, args.checklist, traffic)
     report = await agent.start()
     report["generated_at"] = datetime.utcnow().isoformat()
     output = Path(args.output)

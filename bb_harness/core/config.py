@@ -22,11 +22,6 @@ DB_PATH = DATA_DIR / "bb_harness.db"
 for d in [DATA_DIR, WORDLIST_DIR, OUTPUT_DIR, REPORTS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-# ── Docker ─────────────────────────────────────────────────────────────────────
-DOCKER_IMAGE = "bb-harness:latest"
-CONTAINER_WORKSPACE = "/workspace"
-
-
 @dataclass
 class APIKeys:
     """API keys loaded from env or .env file."""
@@ -69,7 +64,7 @@ class APIKeys:
 class ScanConfig:
     """Runtime scan configuration."""
     target: str = ""
-    mode: str = "host"          # "host" or "container"
+    mode: str = "host"
     concurrency: int = 50
     timeout: int = 30           # seconds per request
     dns_resolvers: list = field(default_factory=lambda: [

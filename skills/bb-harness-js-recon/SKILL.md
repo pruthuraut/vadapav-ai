@@ -93,7 +93,7 @@ third-party hostname merely because it appears inside a script.
 
 ### 3. Filter live JS URLs
 
-Prefer the same container-first tool policy as normal recon:
+Use the installed Linux host toolchain configured by `setup_linux.sh`:
 
 ```bash
 httpx -l "$JS_DIR/js-urls.txt" -silent -mc 200,206,304 \

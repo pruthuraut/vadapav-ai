@@ -54,6 +54,6 @@ class AttackPhaseAgent:
             "safe_checks": "automatic",
             "manual_checks": "approval_required",
             "high_impact_checks": "blocked_until_isolated_adapter_and_approval",
-            "container_mode": self.runner.mode == "container",
+            "execution_mode": "host",
         }
         return report

@@ -492,7 +492,7 @@ class SubdomainEnumAgent(BaseAgent):
         """Probe discovered subdomains over HTTPS/HTTP and persist liveness."""
         # Prefer ProjectDiscovery httpx in the selected execution mode. The
         # existing bounded Python probe below remains the safe fallback when
-        # the CLI/container is unavailable.
+        # the external CLI is unavailable.
         targets = [
             scheme + record["subdomain"]
             for record in records

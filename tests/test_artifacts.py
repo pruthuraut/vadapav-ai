@@ -38,9 +38,9 @@ def test_export_snapshot_writes_domain_scoped_contract(tmp_path, monkeypatch):
 
 def test_record_tool_output_preserves_raw_stdout_and_stderr(tmp_path, monkeypatch):
     monkeypatch.setattr(artifacts, "OUTPUT_DIR", tmp_path)
-    recon = ReconArtifacts("example.com", "raw-test", "container")
+    recon = ReconArtifacts("example.com", "raw-test", "host")
     path = recon.record_tool_output(
-        "passive", "sub_001", "subfinder", "a.example.com\n", "warning\n", "container", 0
+        "passive", "sub_001", "subfinder", "a.example.com\n", "warning\n", "host", 0
     )
 
     text = path.read_text()

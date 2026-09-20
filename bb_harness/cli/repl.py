@@ -16,7 +16,7 @@ from rich.prompt import Prompt
 from bb_harness.core.config import scan_config, api_keys, OUTPUT_DIR, REPORTS_DIR
 from bb_harness.core.artifacts import ReconArtifacts
 from bb_harness.core.db import Database
-from bb_harness.core.runner import DualRunner, ContainerRunner, HostRunner
+from bb_harness.core.runner import DualRunner, HostRunner
 from bb_harness.core.checklist import build_checklist, CATEGORY_INFO, TOTAL_CHECKS
 from bb_harness.core.models import CheckItem, CheckStatus, AgentCategory
 
@@ -166,28 +166,15 @@ class HarnessREPL:
         self.artifacts.write_lines("normalized/live-urls.txt", live_urls)
 
     def _cmd_mode(self, args: str):
-        """Switch execution mode."""
+        """Keep the host-only execution mode explicit."""
         mode = args.strip().lower()
-        if mode not in ("host", "container"):
+        if mode not in ("", "host"):
             console.print(f"[cyan]Current mode:[/cyan] [bold]{scan_config.mode}[/bold]")
-            console.print("[dim]Usage: /mode <host|container>[/dim]")
+            console.print("[dim]bb-harness uses the Linux host toolchain[/dim]")
             return
-
-        if mode == "container":
-            if not ContainerRunner.is_docker_available():
-                console.print("[red]✗ Docker is not available or not running[/red]")
-                return
-            if not ContainerRunner.image_exists():
-                console.print("[yellow]⟳ Building Docker image (bb-harness:latest)...[/yellow]")
-                result = ContainerRunner.build_image()
-                if not result.success:
-                    console.print(f"[red]✗ Docker build failed: {result.stderr[:200]}[/red]")
-                    return
-                console.print("[green]✓ Docker image built successfully[/green]")
-
-        scan_config.mode = mode
-        self.runner = DualRunner(mode=mode)
-        console.print(f"[green]✓ Mode set:[/green] [bold]{mode}[/bold]")
+        scan_config.mode = "host"
+        self.runner = DualRunner(mode="host")
+        console.print("[green]✓ Host mode enabled[/green]")
 
     def _cmd_checklist(self):
         """Show the full methodology checklist."""
@@ -767,8 +754,8 @@ def main(argv=None):
         description="bb-harness: The Bug Hunter's Methodology Recon Orchestrator (TBHM v4.02, 230 checks)",
     )
     parser.add_argument("-t", "--target", help="Target domain (e.g. example.com)")
-    parser.add_argument("-m", "--mode", choices=["host", "container"], default="host",
-                        help="Execution mode (default: host)")
+    parser.add_argument("-m", "--mode", choices=["host"], default="host",
+                        help="Linux host execution mode")
     parser.add_argument("-r", "--run", nargs="?", const="all",
                         help="Run recon agents ('all', or specific agent name like 'subdomain_enum')")
     parser.add_argument("-e", "--export", choices=["markdown", "md", "json", "html"],

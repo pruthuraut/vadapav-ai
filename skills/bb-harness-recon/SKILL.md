@@ -14,14 +14,13 @@ Use it only for authorized targets.
 From the repository root:
 
 ```powershell
-./recon.ps1 -Target example.com -Mode container
-./recon.cmd example.com container
+python3 recon.py example.com
 ```
 
 Equivalent command:
 
 ```powershell
-python -m bb_harness --target example.com --mode container --run all --export json
+python3 -m bb_harness --target example.com --mode host --run all --export json
 ```
 
 The target may be a domain, `*.domain`, comma-separated domains, or a newline-
@@ -30,8 +29,8 @@ delimited domain file. Each target gets its own session and output directory.
 ## Execution policy
 
 1. Start the existing five-agent recon pipeline and preserve all 230 checklist items.
-2. Prefer container execution for external tools.
-3. If Docker or a requested binary is unavailable, `DualRunner` falls back to an installed host tool or the existing safe Python implementation.
+2. Use the installed Linux host toolchain and the existing safe Python fallbacks.
+3. If a requested binary is unavailable, record it as skipped and continue with the safe Python implementation where one exists.
 4. Keep scope, rate limits, timeouts, concurrency, and read-only behavior active.
 5. Run ProjectDiscovery `httpx` against discovered hosts for HTTPS/HTTP liveness, status, title, and technology filtering when available. If the CLI is unavailable, use the existing bounded Python HTTP probe.
 6. Run `httpx` against the discovered URL list when available and save the live URL subset. The complete discovered URL list is always retained.

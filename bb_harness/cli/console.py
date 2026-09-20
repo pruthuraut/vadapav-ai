@@ -59,7 +59,7 @@ def print_banner():
  |_.__/|_.__/      |_| |_|\__,_|_|  |_| |_|\___||___/___/[/bold cyan]
 
   [bold white]TBHM v4.02 Recon Orchestrator[/bold white]
-  [dim]230 checks | 5 categories | Dual Host/Container mode[/dim]
+  [dim]230 checks | 5 categories | Linux host mode[/dim]
 """
     console.print(banner)
 
@@ -73,7 +73,7 @@ def print_help():
 
     commands = [
         ("/target <domain>", "Set the target domain or URL"),
-        ("/mode <host|container>", "Switch between host and container execution"),
+        ("/mode host", "Use the installed Linux host toolchain"),
         ("/checklist", "Show full TBHM methodology checklist with progress"),
         ("/agents", "List all recon agents with enable/disable status"),
         ("/enable <agent|all>", "Enable an agent or all agents"),
