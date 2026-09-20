@@ -44,6 +44,7 @@ output/recon/<domain>/<session_id>/
 ├── urls.txt                       # all discovered URLs
 ├── live-urls.txt                  # httpx-validated URL subset
 ├── javascript.txt                 # discovered JavaScript URLs
+├── dorks.txt                      # generated Google dork links
 ├── interesting-params.txt
 ├── api-endpoints.txt
 ├── uploads.txt

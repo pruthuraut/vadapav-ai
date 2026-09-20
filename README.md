@@ -86,6 +86,7 @@ output/recon/<domain>/<session_id>/
 ├── urls.txt
 ├── live-urls.txt
 ├── javascript.txt
+├── dorks.txt
 ├── interesting-params.txt
 ├── api-endpoints.txt
 ├── uploads.txt

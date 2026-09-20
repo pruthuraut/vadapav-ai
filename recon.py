@@ -7,6 +7,7 @@ import asyncio
 from pathlib import Path
 
 from bb_harness.cli.repl import HarnessREPL
+from bb_harness.core.dorks import write_dorks
 
 
 def read_targets(value: str) -> list[str]:
@@ -42,6 +43,10 @@ async def main() -> None:
             agents="all",
             export_fmt="json",
         )
+        if repl.artifacts:
+            dork_path = repl.artifacts.root / "dorks.txt"
+            count = write_dorks(dork_path, repl.artifacts.domain)
+            print(f"[+] Wrote {count} scoped dorks: {dork_path}")
 
 
 if __name__ == "__main__":

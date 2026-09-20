@@ -13,7 +13,12 @@ sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
   build-essential ca-certificates curl wget git jq unzip zip \
   dnsutils whois nmap masscan openssl libpcap-dev \
-  python3 python3-venv python3-pip pipx golang-go ruby
+  python3 python3-venv python3-pip pipx golang-go ruby ruby-dev cargo rustc
+
+# Distribution-specific utilities are useful when available, but should not
+# prevent the portable core toolchain from being installed.
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  rpcbind whatweb unicornscan || echo "[!] Optional apt tools unavailable"
 
 mkdir -p "${TOOLS_DIR}" "${WORDLIST_DIR}" "${GO_BIN}"
 export PATH="${GO_BIN}:${HOME}/.local/bin:${PATH}"
@@ -37,6 +42,13 @@ go_install github.com/tomnomnom/waybackurls@latest
 go_install github.com/lc/gau/v2/cmd/gau@latest
 go_install github.com/hakluke/hakrawler@latest
 go_install github.com/ffuf/ffuf/v2@latest
+go_install github.com/OJ/gobuster/v3@latest
+
+optional_go_install() {
+  go_install "$1" || echo "[!] Optional tool unavailable: $1"
+}
+optional_go_install github.com/rverton/webanalyze/cmd/webanalyze@latest
+optional_go_install github.com/praetorian-inc/fingerprintx/cmd/fingerprintx@latest
 
 # massdns is built locally because it is not distributed as a stable Go binary.
 MASSDNS_DIR="${TOOLS_DIR}/massdns"
@@ -51,7 +63,11 @@ fi
 python3 -m venv "${TOOLS_DIR}/venv"
 "${TOOLS_DIR}/venv/bin/pip" install --upgrade pip
 "${TOOLS_DIR}/venv/bin/pip" install -r "${PROJECT_DIR}/requirements.txt"
-"${TOOLS_DIR}/venv/bin/pip" install dnsrecon dirsearch arjun wafw00f jsbeautifier sublist3r xnLinkFinder trufflehog
+"${TOOLS_DIR}/venv/bin/pip" install dnsrecon dirsearch arjun wafw00f jsbeautifier sublist3r knockpy paramspider xnLinkFinder trufflehog
+
+gem install wpscan --no-document || echo "[!] Optional tool unavailable: wpscan"
+cargo install rustscan --locked || echo "[!] Optional tool unavailable: rustscan"
+cargo install feroxbuster --locked || echo "[!] Optional tool unavailable: feroxbuster"
 
 # Optional utilities used by the JS skill when available.
 pipx ensurepath || true

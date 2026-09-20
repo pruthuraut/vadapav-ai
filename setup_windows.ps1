@@ -36,7 +36,7 @@ if ($python -eq "py") { & $python -3 -m venv $venv } else { & $python -m venv $v
 $venvPython = Join-Path $venv "Scripts\python.exe"
 & $venvPython -m pip install --upgrade pip
 & $venvPython -m pip install -r (Join-Path $ProjectDir "requirements.txt")
-& $venvPython -m pip install dnsrecon dirsearch arjun wafw00f jsbeautifier sublist3r xnLinkFinder trufflehog
+& $venvPython -m pip install dnsrecon dirsearch arjun wafw00f jsbeautifier sublist3r knockpy paramspider xnLinkFinder trufflehog
 
 $goBin = Join-Path $env:USERPROFILE "go\bin"
 $env:Path = "$goBin;$env:Path"
@@ -52,7 +52,10 @@ $goPackages = @(
     "github.com/tomnomnom/waybackurls@latest",
     "github.com/lc/gau/v2/cmd/gau@latest",
     "github.com/hakluke/hakrawler@latest",
-    "github.com/ffuf/ffuf/v2@latest"
+    "github.com/ffuf/ffuf/v2@latest",
+    "github.com/OJ/gobuster/v3@latest",
+    "github.com/rverton/webanalyze/cmd/webanalyze@latest",
+    "github.com/praetorian-inc/fingerprintx/cmd/fingerprintx@latest"
 )
 foreach ($package in $goPackages) {
     Write-Host "[+] go install $package"
